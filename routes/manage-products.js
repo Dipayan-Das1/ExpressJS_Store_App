@@ -1,11 +1,16 @@
 const path = require('path');
 
 const express = require('express');
+
+const productController = require('../controllers/productcontroller');
+
 //create a mini express application
 const router = express.Router();
 
-const products = []
 
+
+/*
+//Use controller 
 //route get requests
 router.get('/add-product',(req,res,next) => {
     //send response ... by default response type is text/html
@@ -17,14 +22,31 @@ router.get('/add-product',(req,res,next) => {
     //using templating instead
     res.render("add-product",{pageTitle:'Add Product',path:'/add-product'})
 });
+*/
+
+router.get('/add-product',productController.getAddProduct);
+router.get('/edit-product/:productId',productController.getEditProduct);
+router.get('/products',productController.getProducts);
+
+
 
 //route post requests only
+/*   ----use controller logic
 router.post('/add-product',(req,res,next) => {
     //body-parser parses the request and converts it to json format access body by req.body
     console.log(req.body);
     products.push({title:req.body.title});
     res.redirect('/');
 });
+*/
+
+
+
+router.post('/add-product',productController.addProduct);
+router.post('/edit-product',productController.editProduct);
+router.post('/delete-product',productController.deleteProduct);
 
 module.exports.router = router;
-module.exports.products = products;
+
+//moved to controller
+//module.exports.products = products;
