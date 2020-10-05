@@ -16,8 +16,14 @@ module.exports.addProduct = (req,res,next) => {
 
     //constructing product model class
     const prod = new ProductModel(null,req.body.title,req.body.price,req.body.description);
-    prod.save();
-    res.redirect('/manage/products');
+    prod.save().then((res) => {
+        res.redirect('/manage/products');
+    }).catch(err => {
+        console.log(err);
+        res.redirect('/manage/products');
+    });
+
+    
 }
 
 module.exports.editProduct = (req,res,next) => {
@@ -49,47 +55,38 @@ module.exports.deleteProduct = (req,res,next) => {
 }
 
 module.exports.getProducts = (req,res,next) => {
-
-    ProductModel.fetchAll(prods => {
-        //console.log(products);
-        
-        console.log(prods);
-        res.render("admin/products",{pageTitle:'Admin Products page',path:'/admin-product',products:prods});
-    
-        });    
-    
+    ProductModel.fetchAll().then(([rows,fieldData]) => {
+        console.log(rows);
+        console.log(fieldData);
+        res.render("admin/products",{pageTitle:'Admin Products page',path:'/admin-product',products:rows});
+    });  
 }
 
 ///-----------------------------------------------------------------
 
 module.exports.getAllProducts = (req,res,next) => {
-    console.log("Inside get getAllProducts")
-    //passed as callback
-    ProductModel.fetchAll(prods => {
-    //console.log(products);
-    
-    console.log(prods);
-    res.render("customer/product-list",{pageTitle:'Product List',path:'/products',products:prods});
+    console.log("Inside get getAllProducts");
 
-    });    
+    ProductModel.fetchAll().then(([rows,fieldData]) => {
+        console.log(rows);
+        console.log(fieldData);
+        res.render("customer/product-list",{pageTitle:'Product List',path:'/products',products:rows});
+    });            
 }
 
 module.exports.getShopDetails = (req,res,next) => {
     console.log("Inside get getShopDetails")
-    //passed as callback
-    ProductModel.fetchAll(prods => {
-    //console.log(products);
-    
-    console.log(prods);
-    res.render("customer/index",{pageTitle:'Shop Details Page',path:'/',products:prods});
-
-    });    
+    ProductModel.fetchAll().then(([rows,fieldData]) => {
+        console.log(rows);
+        console.log(fieldData);
+        res.render("customer/index",{pageTitle:'Shop Details Page',path:'/',products:rows});
+    });
 }
 
 module.exports.getProductDetail = (req,res,next) => {
     console.log("Inside get product detail "+req.params.productId);
-    ProductModel.getById(req.params.productId,prod => {
-        console.log(prod);
-        res.render("customer/product-detail",{pageTitle:'Product Detail',path:'/products',product:prod}); 
-    }); 
+    const product = ProductModel.getById(req.params.productId);
+    product.then(([prod,fields]) => {
+        res.render("customer/product-detail",{pageTitle:'Product Detail',path:'/products',product:prod[0]}); 
+    });
 }

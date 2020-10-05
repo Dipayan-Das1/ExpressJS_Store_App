@@ -1,4 +1,15 @@
-const db = require("../util/database")
+const express_app = require('../app');
+const path = require('path');
+const fs = require('fs');
+function getRndInteger(min, max) {
+    return Math.floor(Math.random() * (max - min) ) + min;
+  }
+
+
+/*move saving objects to a file
+//temporarily store data here
+//const products = [];
+*/
 //this module exports product model, we are defining a Product class here
 //constructor is object constructor
 module.exports = class Product {
@@ -13,7 +24,35 @@ module.exports = class Product {
     //object method
     save()
     {
-       return db.execute('INSERT INTO storedb.products (title, price, description,image_url) VALUES (?, ?, ?,?)',[this.title,this.price,this.description,'image']); 
+        //products.push(this);
+        //this.id = Math.random().toString();
+        if(this.id === null)
+        {
+            this.id = getRndInteger(1, 100000);
+        }
+        //construct path to file storage
+        const pth = path.join(path.dirname(require.main.filename),'data','products.json');
+
+        //read exisitng contents
+        fs.readFile(pth,(err,data) => {
+            let products = [];
+            if (!err)
+            {
+                //if no error parse the file conents to JSON
+                products = JSON.parse(data);
+            }
+            else{
+                console.log(err);
+            }
+
+            //add new product to product list and write to file
+            
+            products.push(this);
+            fs.writeFile(pth,JSON.stringify(products),(err) => {
+                console.log(err);
+            });
+            
+        });
     }
 
     update()
@@ -53,16 +92,46 @@ module.exports = class Product {
         });
     }
 
-    static getById(id)
+    static getById(id,cb)
     {
         console.log("Inside fetch by Id");
-        return db.execute("select * from storedb.products where id = ?",[id]);   
+        const pth = path.join(path.dirname(require.main.filename),'data','products.json');
+        fs.readFile(pth,(err,content) => {
+            console.log("Inside read file get By Id")
+            let products = [];
+            if (!err)
+            {
+                
+                products = JSON.parse(content.toString());
+                const product = products.find(p => p.id === parseInt(id));
+                console.log(product);
+                cb(product);
+            }
+            else{
+                console.log(err);
+            }
+            
+        });   
     }
 
     static fetchAll(cb)
     {    
         console.log("Inside fetch all");
-        return db.execute("select * from storedb.products")        
+        const pth = path.join(path.dirname(require.main.filename),'data','products.json');
+        fs.readFile(pth,(err,content) => {
+            console.log("Inside read file")
+            let products = [];
+            if (!err)
+            {
+                console.log("content"+content);
+                products = JSON.parse(content.toString());
+                console.log(products);
+            }
+            else{
+                console.log(err);
+            }
+            cb(products);
+        });   
     }
 
     static delete(productId)
