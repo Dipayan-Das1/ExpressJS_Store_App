@@ -5,9 +5,9 @@ const express = require('express');
 const parser = require('body-parser');
 
 //import admin routes
-const manageProducts = require('./routes/manage-products');
+const manageProductsRoutes = require('./routes/manage-products');
 //import shop routes
-const shopProducts = require('./routes/shop-products');
+const shopProductsRoutes = require('./routes/shop-products');
 
 const path = require('path');
 
@@ -17,6 +17,7 @@ const app = express();
 //use ejs templating view engine
 app.set('view engine','ejs');
 app.set('views','views');
+
 
 //server static files instead of going through middleware
 //static content is in /public directory
@@ -31,11 +32,11 @@ parser.urlencoded() registers a middleware function similar to app.use we are us
 this parses only html forms not other types
 */
 
-//manageproducts is express router ....manages resources starting with /manage
-app.use('/manage',manageProducts.router);
+//manageproductsRoutes is express router ....manages resources starting with /manage
+app.use('/manage',manageProductsRoutes.router);
 
 //for routing requests to '/'
-app.use(shopProducts);
+app.use(shopProductsRoutes);
 
 //set 404 
 app.use((req,res,next) => {
@@ -51,3 +52,4 @@ const httpServer = serverInit.createServer(app);
 
 //configure server
 httpServer.listen(8002);
+
