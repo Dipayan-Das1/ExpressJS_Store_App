@@ -7,11 +7,11 @@
         <h1>Customer Cart Page</h1>
         <% if( cart!=null && cart.products.length > 0 ) { %>
             <ul>
-            <% for (cartItem of cart.products) { %>
+            <% for (product of cart.products) { %>
                 <li>
-                    <div><%= cartItem.product.title %> (Quantity: <%= cartItem.quantity %>)</div>
+                    <div><%= product.title %> (Quantity: <%= product.cartItem.quantity %>)</div>
                     <form action="/cart/delete" method="POST">
-                        <input type="hidden" name="productId" value="<%= cartItem.product.id %>" />
+                        <input type="hidden" name="productId" value="<%= product.id %>" />
                         <button class="btn" type="submit">Delete From Cart</button>
                     </form>
                 </li>
@@ -22,6 +22,13 @@
         <% } else { %>
             <p>No products in cart</p>
         <% } %>    
+
+        <div class="centered">
+            <form action="/place-order" method="POST">
+                <button class="btn" type="submit">Place Order</button>
+            </form>
+        </div>
+        
             
     </main>
     <%- include('../includes/end.ejs') %>

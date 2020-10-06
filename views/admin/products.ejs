@@ -19,8 +19,8 @@
                                 alt="A Book">
                         </div>
                         <div class="card__content">
-                            <h2 class="product__price">$<%= product.hasOwnProperty('price') ? product.price : 'NA' %></h2>
-                            <p class="product__description"><%= product.hasOwnProperty('description') ? product.description : 'No description available' %></p>
+                            <h2 class="product__price">$<%= product.price %></h2>
+                            <p class="product__description"><%= product.description %></p>
                         </div>
                         <div class="card__actions">
                             <a href="/manage/edit-product/<%= product.id %>" >Edit</a>
