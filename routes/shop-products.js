@@ -23,8 +23,8 @@ router.get('/',productController.getShopDetails);
 router.get('/products',productController.getAllProducts);
 router.get('/product/detail/:productId',productController.getProductDetail);
 
-router.get('/checkout',cartController.checkout);
-router.get('/orders',cartController.checkout);
+router.post('/place-order',cartController.processOrder);
+router.get('/orders',cartController.orders);
 
 router.post('/cart/delete',cartController.deleteFromCart);
 router.post('/cart',cartController.addToCart);
