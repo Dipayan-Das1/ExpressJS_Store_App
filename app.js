@@ -4,10 +4,43 @@ const express = require('express');
 //import body parser dependency 
 const parser = require('body-parser');
 
+const Product = require('./models/productmodel');
+const User = require('./models/usermodel');
+const Cart = require('./models/cartmodel');
+const CartItem = require('./models/cartitemmodel');
+const Order = require('./models/ordermodel')
+const OrderItemModel = require('./models/orderitemmodel')
+
+//The A.belongsTo(B) association means that a One-To-One relationship exists 
+//between A and B, with the foreign key being defined in the source model (A).
+
+//one-to-many
+Product.belongsTo(User,{constraints:true,onDelete:'CASCADE'});
+User.hasMany(Product);
+
+//many-to-many
+Cart.belongsToMany(Product,{through: CartItem});
+Product.belongsToMany(Cart,{through: CartItem});
+
+//one-to-one
+Cart.belongsTo(User,{constraints:true,onDelete:'CASCADE'});
+User.hasOne(Cart);
+
+
+//many-to-many
+Order.belongsToMany(Product,{through: OrderItemModel});
+Product.belongsToMany(Order,{through: OrderItemModel});
+
+Order.belongsTo(User,{constraints:true,onDelete:'CASCADE'});
+User.hasMany(Order);
+
+
 //import admin routes
 const manageProductsRoutes = require('./routes/manage-products');
 //import shop routes
 const shopProductsRoutes = require('./routes/shop-products');
+
+const sequelize = require('./util/database');
 
 const path = require('path');
 
@@ -26,6 +59,13 @@ app.use('/public',express.static(path.join(__dirname,"public")))
 //for all incoming requests use parser to parse the incoming request
 //this handler should come first
 app.use('/',parser.urlencoded({extended: false}));
+
+app.use('/',(req,res,next) => {
+    User.findByPk(1).then(user =>{
+        req.user = user;
+        next();
+    });
+});
 
 /*
 parser.urlencoded() registers a middleware function similar to app.use we are using below , parsing the incoming request for all paths
@@ -47,9 +87,24 @@ app.use((req,res,next) => {
     res.status(404).render('NotFound',{pageTitle:'Resource does not exist',path:'NotFound'});
 });
 
+sequelize.sync().then(result => {
+    return User.findByPk(1);  
+}).then(user => {
+    if(!user)
+    {
+        user =  User.create({
+            name: "admin",
+            email: "admin@email.com"
+        });
+    }
+    return user;
+}).then(user => {
+    app.listen(8002);
+});
+
 //create http server and add express app as event callback
 const httpServer = serverInit.createServer(app);
 
 //configure server
-httpServer.listen(8002);
+
 
