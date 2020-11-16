@@ -9,15 +9,16 @@
             <ul>
             <% for (product of cart.products) { %>
                 <li>
-                    <div><%= product.title %> (Quantity: <%= product.cartItem.quantity %>)</div>
+                    <div><%= product.title %> (Quantity: <%= product.quantity %>)</div>
                     <form action="/cart/delete" method="POST">
-                        <input type="hidden" name="productId" value="<%= product.id %>" />
+                        <input type="hidden" name="productId" value="<%= product._id %>" />
                         <button class="btn" type="submit">Delete From Cart</button>
                     </form>
                 </li>
             <% } %>    
             </ul>
             <div>Price: <%= cart.price %></div>
+            
 
         <% } else { %>
             <p>No products in cart</p>
@@ -25,6 +26,7 @@
 
         <div class="centered">
             <form action="/place-order" method="POST">
+                <input type="hidden" name="price" value="<%= cart.price %>" />
                 <button class="btn" type="submit">Place Order</button>
             </form>
         </div>

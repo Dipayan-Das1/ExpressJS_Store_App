@@ -9,9 +9,9 @@
         <% if( orders && orders.length > 0 ) { %>
             <% for (order of orders) { %>
             <ul>
-            <% for (product of order.products) { %>
+            <% for (product of order.items) { %>
                 <li>
-                    <div><%= product.title %> (Quantity: <%= product.orderItem.quantity %>)</div>
+                    <div><%= product.title %> (Quantity: <%= product.quantity %>)</div>
                 </li>
             <% } %>    
             </ul>
