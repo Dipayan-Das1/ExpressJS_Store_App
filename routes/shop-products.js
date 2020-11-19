@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const productController = require('../controllers/productcontroller');
 const cartController = require('../controllers/cartcontroller')
-
+const auth = require('../util/authchecker')
 router = express.Router();
 
 /* Use controller instead
@@ -19,15 +19,15 @@ router.get('/',(req,res,next) => {
     res.render("shop",{pageTitle:'Add Product',path:'/',products:products})
 });
 */
-router.get('/',productController.getShopDetails);
+ router.get('/',productController.getShopDetails);
 router.get('/products',productController.getAllProducts);
-router.get('/product/detail/:productId',productController.getProductDetail);
+router.get('/product/detail/:productId',auth,productController.getProductDetail);
 
-router.post('/place-order',cartController.processOrder);
-router.get('/orders',cartController.orders);
+router.post('/place-order',auth,cartController.processOrder);
+router.get('/orders',auth,cartController.orders);
 
-router.post('/cart/delete',cartController.deleteFromCart);
-router.post('/cart',cartController.addToCart);
-router.get('/cart',cartController.getCartDetails);
-
+router.post('/cart/delete',auth,cartController.deleteFromCart);
+router.post('/cart',auth,cartController.addToCart);
+router.get('/cart',auth,cartController.getCartDetails);
+ 
 module.exports=router;
