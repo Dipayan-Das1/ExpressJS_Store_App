@@ -6,110 +6,65 @@ const ObjectId = require('mongodb').ObjectID;
 
 
  module.exports.getCartDetails = (req,res,next) => {
-    let user = User.getCart(req.user).then(user => {
-        let cartDtls;
+    let authenticated = req.session.isLoggedin ? true : false;
+     console.log("Get cart details");
+    req.user.populate('cart.products.productId')
+        .execPopulate()
+        .then(usr => {
+        console.log(usr.cart.products);
         
-            if(user.cart)
-            {
-                let cartItems = user.cartItems;
-                
-                user.cart.forEach(element => {
-                    let cartItem = cartItems.find(item => 
-                        {
-                            let match = element.productId.toString() === item._id.toString();
-                            return match;
-                        });
-                     
-                    if(cartItem)
-                    {    
-                        cartItem.quantity = element.quantity;
-                    }
-                    
-                });
-                cartDtls = {products : user.cartItems,price : getCartPrice(user.cartItems)};
-            }
-            else
-            {
-                cartDtls = {products : [],price : 0};
-            }
+        let price = 0;
         
-
-        res.render("customer/cart",{pageTitle:'Customer Cart',path:'/cart',cart:cartDtls});
-    });
-        
+        usr.cart.products.forEach(prd => {
+            price = price + prd.quantity * prd.productId.price;
+        });
+        cart = {products : usr.cart.products,price : price}
+        res.render("customer/cart",{pageTitle:'Customer Cart',path:'/cart',cart:cart,isAuthenticated:authenticated});
+    })        
 }
 
-const getCartPrice = (products) => {
-let cartPrice = 0;
-products.forEach(prod => {
-    let quantity = parseInt(prod.quantity);
-    let price = parseInt(prod.price);
-    cartPrice = cartPrice + (quantity * price);
-});
-return cartPrice;
-}
+
 
 
 module.exports.processOrder = (req,res,next) => {
+    let authenticated = req.session.isLoggedin ? true : false;
+    console.log("price is "+req.body.price);
+    const order = new Order();
+    order.price = req.body.price;
+    order.user = req.user;
+    req.user.populate('cart.products.productId')
+        .execPopulate()
+        .then(usr => {
+            order.products = usr.cart.products.map(prodItem => {
+                console.log("Inside process order");
+                console.log(prodItem);
+                let productData = { ...prodItem.productId._doc };   ///this is needed to get the product data and copy to order product data
+                let quantity = prodItem.quantity;
+                return {productData:productData,quantity:quantity};
 
-    console.log("price is "+req.body.price);    
+            });
+            console.log(order);
+            return order;
+        })
+        .then(ordr => {
+            return order.save();
+        }).then(res => {
+            req.user.cart.products = [];
+            return req.user.save(); 
+        }).then(resp => {
+            res.redirect("/orders");
+        });
+       
 
-    let user = User.getCart(req.user).then(user => {
-        let cartDtls;
-        
-            if(user.cart)
-            {
-                let cartItems = user.cartItems;
-                
-                user.cart.forEach(element => {
-                    let cartItem = cartItems.find(item => 
-                        {
-                            let match = element.productId.toString() === item._id.toString();
-                            return match;
-                        });
-                     
-                    if(cartItem)
-                    {    
-                        cartItem.quantity = element.quantity;
-                    }
-                    
-                });
-                cartDtls = {products : user.cartItems,price : req.body.price};
-            }
-
-          return cartDtls;
-    }).then(cart => {
-        let order;
-        if(cart)
-        {
-            order = new Order(cart.products,cart.price,req.user);
-            return order    
-        }
-        else{
-            res.redirect("/");
-        }
-    }).then(order => {     
-        return order.save();
-    }).then(data => {
-        if(data.insertedId)
-        {
-            console.log("clear cart");
-            return User.clearCart(req.user);
-        }
-        else
-        {
-            res.render("/cart");
-        }
-    }).then(data => {
-        res.redirect("/orders");
-    });   
+       
 }
 
 
 module.exports.orders = (req,res,next) => {
-    Order.getOrder(req.user).then(orders => {
+    let authenticated = req.session.isLoggedin ? true : false;
+    Order.find({user: req.user}).then(orders => {
         console.log(orders);
-        res.render("customer/orders",{pageTitle:'Customer Orders',path:'/orders',orders:orders});       
+        res.render("customer/orders",{pageTitle:'Customer Orders',path:'/orders',orders:orders,isAuthenticated:authenticated});       
     }).catch(err => {
         console.log(err);
         res.redirect("/");
@@ -121,19 +76,22 @@ module.exports.orders = (req,res,next) => {
  
 
 
-module.exports.addToCart = (req,res,next) => {    
+module.exports.addToCart = (req,res,next) => {   
+    let authenticated = req.session.isLoggedin ? true : false;
+    console.log("Inside add to cart") 
     let productId = req.body.productId;
 
-    User.addToCart(req.user,productId).then(cart => {
+    req.user.addToCart(productId).then(cart => {
             console.log(cart);
             res.redirect("/cart"); 
         });
 }
 
 
-module.exports.deleteFromCart = (req,res,next) => {    
+module.exports.deleteFromCart = (req,res,next) => {  
+    let authenticated = req.session.isLoggedin ? true : false;  
     let productId = req.body.productId;
-    User.deleteFromCart(req.user,productId).then(cart => {
+    req.user.deleteFromCart(productId).then(cart => {
         res.redirect("/cart");
     }).catch(err => {
         console.log(err);
