@@ -4,8 +4,6 @@ const express = require('express');
 //import body parser dependency 
 const parser = require('body-parser');
 
-const mongoConnect = require('./util/database').mongoConnect;
-const getUser = require('./util/database').getUser;
 
 
 //import admin routes
@@ -13,7 +11,23 @@ const manageProductsRoutes = require('./routes/manage-products');
 //import shop routes
 const shopProductsRoutes = require('./routes/shop-products');
 
+const authRoutes = require('./routes/auth')
+
 const path = require('path');
+
+//import mongoose
+const mongoose = require('mongoose');
+
+const session = require('express-session');
+
+const MongoDbStore = require('connect-mongodb-session')(session);
+
+
+const store  = new MongoDbStore({
+    uri:'mongodb://localhost:27017/store',
+    collection:'sessions'
+});
+
 
 //Creates an Express application. 
 const app = express();
@@ -31,9 +45,25 @@ app.use('/public',express.static(path.join(__dirname,"public")))
 //this handler should come first
 app.use('/',parser.urlencoded({extended: false}));
 
+app.use(session({secret: 'secret123',resave:false,saveUninitialized:false,store:store}))
+
 app.use('/',(req,res,next) => {
-    req.user = getUser();
-    next();
+
+    if(req.session.user)
+    {
+        console.log("Logged in user "+req.session.user._id)
+        User.findOne({_id:req.session.user._id}).then(usr => {
+            req.user = usr;
+            console.log("Logged in user "+req.user._id);
+            next();
+        })
+    }
+    else{
+        console.log("No user data");
+        next();
+    }
+    
+    
 });
 
 /*
@@ -44,6 +74,7 @@ this parses only html forms not other types
 //manageproductsRoutes is express router ....manages resources starting with /manage
 app.use('/manage',manageProductsRoutes.router);
 
+app.use(authRoutes);
 //for routing requests to '/'
 app.use(shopProductsRoutes);
 
@@ -57,7 +88,22 @@ app.use((req,res,next) => {
 });
 
 
-mongoConnect().then(res => {
+const User = require('./models/usermodel')
+
+mongoose.connect('mongodb://localhost:27017/store', {useNewUrlParser: true}).then(res => {
+    User.findOne({name:"Admin"}).then(res => {
+        if(!res)
+        {
+            const user = new User({
+                name:"Admin",
+                email:"Admin@gmail.com",
+                cart: {products:[]}
+            });
+            user.save();
+        }
+    });
+    
+
     app.listen(8002);
 });
 
