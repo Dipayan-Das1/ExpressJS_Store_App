@@ -1,88 +1,71 @@
-const db = require('../util/database').getConnection
-const ObjectId = require('mongodb').ObjectID;
-const User = class User{
-    constructor(name,email)
-    {
-        this.name = name;
-        this.email = email;
-    }
+const mongoose = require('mongoose');
+const Product = require('./productmodel')
 
-    createUser()
-    {
-        return db().collection("users").insertOne(this).then(res => {
-            console.log("user successfully inserted "+res._id);
-            return res;
-        }).catch(err => {
-            console.log("Exception during user creation");
-            throw err;
-        })
-    }
+const Schema = mongoose.Schema;
 
-    static getUser(id)
-    {
-        return db().collection("users").findOne({_id: new ObjectId(id)});
-    }
-
-    static getCart(userId)
-    {
-        return db().collection("users").aggregate([{$match: {_id: new ObjectId(userId)}},{$lookup: {from: "products",localField: "cart.productId",foreignField: "_id",as:"cartItems"}}]).next();
-    }
-
-
-    static addToCart(userId, productId)
-    {
-        let user; 
-        return User.getUser(userId).then(res => {
-            user = res;
-            let cart = res.cart;
-            if(!cart)
-            {
-                cart = []
+const userSchema = new Schema({
+    name:{
+        type: String,
+        required: true
+    },
+    email:{
+        type: String,
+        required: true
+    },
+    password:{
+        type: String,
+        required: true
+    },
+    cart:{
+        products: [{
+            productId:{
+                type: Schema.Types.ObjectId,
+                ref: 'Product',
+                required: true
+            },
+            quantity:{
+                type: Number,
+                required: true
             }
-            return cart;
-        }).then(cart => {
-            
-            let cartItem = cart.find(item => item.productId.toString() === productId);
-            if(cartItem)
-            {
-                cartItem.quantity = cartItem.quantity + 1;
-                return cart;  
-            }
-            else{
-                cartItem = {productId:new ObjectId(productId),quantity: 1};    
-                cart = [...cart,cartItem];
-                return cart;
-            }
-            
+        }]
+    }
+   
+});
 
-        }).then(cart => {
-             return db().collection("users").updateOne({_id: new ObjectId(userId)},{$set: {"cart":cart}});
+
+
+
+userSchema.methods.addToCart = function(productId) {
+
+
+    return Product.findById(productId).then(product => {
+        cartItm = this.cart.products.find(prod => {
+            return prod.productId.toString() === productId.toString();
         });
-    }
 
-    static deleteFromCart(userId,productId)
-    {
-        let user;
-        return User.getUser(userId).then(res => {
-            user = res;
-            return res.cart;
-        }).then(cart => {
-            if(cart)
-            {
-                let cartItems = cart.filter(item => {
-                    return item.productId.toString() != productId;
-                });
-                console.log("cartitems before delete "+cartItems)
-                return db().collection("users").updateOne({_id: new ObjectId(userId)},{$set: {"cart":cartItems}});
-            }
-            return cart;
-        });
-    }
+        if(!cartItm)
+        {
+            cartItem = {productId: product._id,quantity: 1};    
+            cartItems = [...this.cart.products,cartItem];
+            this.cart.products = cartItems;
+        }
+        else{
+            cartItm.quantity = cartItm.quantity + 1;
+        }
+        console.log(this.cart.products);
+        return this.save();
 
-    static clearCart(userId)
-    {
-        return db().collection("users").updateOne({_id: new ObjectId(userId)},{$set: {"cart":[]}});
-    }
+    });   
 }
 
-module.exports = User;
+userSchema.methods.deleteFromCart = function(productId){
+
+    this.cart.products = this.cart.products.filter(item => {
+        return item.productId.toString() != productId.toString();
+    })
+
+    return this.save();
+}
+
+
+module.exports = mongoose.model("User",userSchema);
